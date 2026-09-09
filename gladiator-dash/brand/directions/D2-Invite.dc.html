@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Permanent+Marker&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+    :root{
+      --paper:#F7F2E4;
+      --ink:#181410;
+      --lime:#C7EA46;
+      --pink:#F0479A;
+      --muted:#8A8066;
+    }
+    body{margin:0;}
+    .mf-stamp{font-family:'Archivo Black',sans-serif;}
+    .mf-marker{font-family:'Permanent Marker',cursive;}
+  </style>
+</helmet>
+<div style="width:390px; min-height:844px; background:var(--paper); font-family:'Space Grotesk',sans-serif; color:var(--ink); box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">
+
+  <div class="mf-marker" style="padding:22px 0 0; font-size:22px;">mud boys 🐗</div>
+
+  <div style="position:relative; margin:18px 22px 0; background:#fff; border:2.5px solid var(--ink); border-radius:3px; padding:24px 18px; text-align:center; transform:rotate(-1deg); width:280px;">
+    <div style="font-size:11.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted);">ur friends are running at</div>
+    <div class="mf-stamp" style="font-size:42px; margin-top:6px; color:var(--pink);">9:30</div>
+
+    <div style="display:flex; justify-content:center; gap:8px; margin-top:16px;">
+      <div style="width:32px; height:32px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;">JP</div>
+      <div style="width:32px; height:32px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;">RM</div>
+      <div style="width:32px; height:32px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800;">CB</div>
+    </div>
+    <div style="font-size:11.5px; color:var(--muted); margin-top:8px;">Jacob P. · Ryan M. · Connor B.</div>
+
+    <div style="display:inline-block; margin-top:12px; background:var(--ink); color:#fff; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:20px; transform:rotate(3deg);">only 17 left!!</div>
+  </div>
+
+  <div style="width:280px; margin-top:18px;">
+    <div style="background:var(--pink); color:#fff; border:2.5px solid var(--ink); text-align:center; padding:14px; border-radius:3px; font-weight:700; transform:rotate(1deg);">JOIN THE CREW →</div>
+  </div>
+
+  <div style="flex:1;"></div>
+
+  <div style="width:280px; margin-bottom:24px; display:flex; align-items:center; justify-content:center; gap:8px; background:#fff; border:2px dashed var(--ink); border-radius:3px; padding:13px;">
+    <div class="mf-marker" style="font-size:15px;">send to the groupchat →</div>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

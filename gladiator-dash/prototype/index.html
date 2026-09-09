@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Gladiator Dash Prototype</title>
+
+<link rel="icon" type="image/png" href="./media/opt-helmet.png">
+<link rel="apple-touch-icon" href="./media/opt-helmet.png">
+
+<meta property="og:title" content="Come run with 5 people from Mud Boys">
+<meta property="og:description" content="Gladiator Dash, 9:30 AM, April 11, Lake Bryan">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800&family=Play:wght@400;700&family=Jost:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#0B1220;
+  --raise:#141D2E;
+  --raise-2:#1B2639;
+  --line:#26334A;
+  --ink:#F4F6F8;
+  --muted:#95A2B5;
+  --cyan:#4FC7E8;
+  --cyan-deep:#1D89AC;
+  --red:#E3452F;
+  --red-ink:#FF8570;
+  --ok:#5BD6A0;
+
+  --step--1:0.8125rem;
+  --step-0:0.9375rem;
+  --step-1:1.125rem;
+  --step-2:1.5rem;
+  --step-3:2.125rem;
+
+  --pad:20px;
+  --radius:3px;
+  --ease:cubic-bezier(.16,.84,.28,1);
+}
+
+*{box-sizing:border-box;min-width:0;}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden;}
+body{
+  margin:0;
+  position:relative;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:'Jost',system-ui,sans-serif;
+  font-size:var(--step-0);
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+::selection{background:var(--cyan);color:#06101C;}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:2px;}
+input,button{font:inherit;color:inherit;caret-color:var(--cyan);}
+button{background:none;border:0;padding:0;cursor:pointer;text-align:left;}
+
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px;border:3px solid var(--ground);}
+
+.d{
+  font-family:'Play',system-ui,sans-serif;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:-0.015em;
+  line-height:0.92;
+  margin:0;
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;}
+
+/* the two brand names always set in the display face the real site uses */
+.bn{font-family:'Orbitron','Play',system-ui,sans-serif;font-weight:800;letter-spacing:-0.01em;}
+/* tracked-out contexts leave a gap after the span's last letter, which shows up
+   as a space before a following comma */
+.kicker .bn,.stat .k .bn,.tierlabel .bn{margin-right:-0.1em;}
+
+.wrap{max-width:440px;margin:0 auto;padding:0 var(--pad) 120px;}
+
+/* ---------- chrome ---------- */
+.top{
+  display:flex;align-items:center;gap:10px;
+  padding:18px var(--pad) 0;max-width:440px;margin:0 auto;
+}
+/* Crops taken from the supplied brand PNGs. Each asset carries transparent
+   padding and, in the wordmark's case, two lines of type; these windows pull out
+   just the part we want. Percentages resolve against the window, so one rule
+   works at any size. Measured from the alpha channel, not by eye. */
+.crop{position:relative;overflow:hidden;display:block;flex:none;}
+.crop img{position:absolute;max-width:none;}
+
+/* GLADIATOR DASH only, out of the two-line white wordmark (source 2172x724,
+   the line sits at y 358-502) */
+.crop.words{--h:30px;height:var(--h);aspect-ratio:2172 / 144;}
+.crop.words img{width:100%;left:0;top:-248.611%;}
+/* hero: size by width so it fills the column instead of overrunning it */
+/* Both name lines together, ONE ARMY over GLADIATOR DASH. Content sits at
+   x 50-2121, y 208-492 of a 2172x724 source. The window is x 45-2127, y 200-500,
+   trimming the left margin so the logo's edge lines up with the copy below it
+   rather than sitting indented from it. */
+.crop.words.two{aspect-ratio:2082 / 300;}
+.crop.words.two img{width:104.323%;left:-2.161%;top:-66.667%;}
+.crop.words.fill{width:100%;height:auto;max-width:1000px;}
+.crop.words.two.fill{max-width:880px;}
+
+/* The helmet is NOT cropped. It sits in its own square with object-fit:contain,
+   so the transparent margin costs a little tightness but nothing can ever be
+   clipped. A hand-derived crop window kept shaving the tip off the crest swoop,
+   whose antialiased edge is too faint to survive an alpha threshold. */
+.helmet{height:var(--h,28px);aspect-ratio:1;object-fit:contain;flex:none;display:block;}
+
+.mark{width:26px;height:30px;flex:none;object-fit:contain;display:block;}
+
+/* hero video, the clip from the current site, as ground rather than as a hero block.
+   It lives outside #app so a re-render never tears it down and restarts playback. */
+#app{position:relative;z-index:1;}
+.herovid{
+  position:absolute;top:0;left:0;right:0;height:min(58vh,520px);
+  overflow:hidden;z-index:0;pointer-events:none;display:none;
+}
+.herovid.on{display:block;}
+.herovid.tall{height:min(82svh,720px);}
+.herovid.tall video{opacity:.42;}
+.herovid.tall::after{
+  background:linear-gradient(180deg,rgba(11,18,32,.50) 0%,rgba(11,18,32,.34) 34%,
+    rgba(11,18,32,.86) 76%,var(--ground) 100%);
+}
+.herovid video{
+  width:100%;height:100%;object-fit:cover;display:block;
+  opacity:.34;filter:saturate(.75) contrast(1.06);
+}
+.herovid::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(11,18,32,.62) 0%,
+    rgba(11,18,32,.70) 40%,
+    rgba(11,18,32,.92) 78%,
+    var(--ground) 100%);
+}
+.herovid.failed video{display:none;}
+@media (prefers-reduced-motion:reduce){ .herovid video{display:none;} }
+.wordmark{
+  font-family:'Orbitron','Play',sans-serif;font-weight:800;
+  text-transform:uppercase;font-size:0.75rem;letter-spacing:0.01em;white-space:nowrap;
+}
+
+.top .cause{margin-left:auto;font-size:var(--step--1);color:var(--muted);white-space:nowrap;}
+@media (max-width:479px){ .top .cause{display:none;} }
+
+/* ---------- group page ---------- */
+.groupname{
+  font-size:clamp(2.25rem,11vw,3.25rem);
+  margin:26px 0 0;
+  font-weight:700;
+}
+.groupmeta{
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;
+  margin-top:10px;color:var(--muted);font-size:var(--step--1);
+  letter-spacing:0.02em;text-transform:uppercase;
+}
+.groupmeta b{color:var(--ink);font-weight:600;}
+
+.lede{
+  margin:22px 0 0;color:var(--muted);font-size:var(--step-1);line-height:1.4;
+  max-width:34ch;
+}
+.lede b{color:var(--ink);font-weight:600;}
+
+.timeblock{margin-top:26px;}
+.timelabel{
+  font-size:var(--step--1);letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--muted);
+}
+.bigtime{
+  font-size:clamp(3.75rem,22vw,6rem);
+  color:var(--cyan);
+  margin:2px 0 0;
+  font-weight:700;
+  letter-spacing:-0.03em;
+}
+.bigtime .ampm{font-size:0.36em;letter-spacing:0.02em;margin-left:.1em;color:var(--cyan-deep);}
+
+.faces{display:flex;align-items:center;margin-top:14px;}
+.face{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--raise-2);border:1.5px solid var(--cyan-deep);
+  display:grid;place-items:center;
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:0.75rem;letter-spacing:0.02em;
+  margin-right:-8px;
+}
+.face.more{border-color:var(--line);color:var(--muted);background:var(--raise);}
+.names{margin-top:12px;color:var(--muted);font-size:var(--step-0);}
+.names b{color:var(--ink);font-weight:500;}
+
+.spots{
+  display:inline-flex;align-items:center;gap:7px;margin-top:16px;
+  font-size:var(--step--1);letter-spacing:0.06em;text-transform:uppercase;
+  color:var(--muted);
+}
+.spots .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none;}
+.spots.low{color:var(--red-ink);}
+.spots.low .dot{background:var(--red);}
+.spots.full{color:var(--red-ink);}
+
+.join{
+  display:block;width:100%;margin-top:22px;
+  background:var(--cyan);color:#06101C;
+  border-radius:var(--radius);
+  padding:17px 18px;
+  font-family:'Play',sans-serif;
+  font-weight:700;
+  text-transform:uppercase;letter-spacing:0.01em;
+  font-size:1.1875rem;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  transition:transform .18s var(--ease),background .18s var(--ease);
+  box-shadow:0 8px 20px -12px rgba(0,0,0,.85);
+}
+/* Waiting on a choice. Still legible, still obviously the next step — a button
+   at .35 opacity reads as absent, which is exactly how the heat step got lost. */
+.join.off{
+  background:transparent;color:var(--muted);
+  border:1px solid var(--line);box-shadow:none;pointer-events:none;
+}
+.join:hover{background:#6BD5F0;}
+.join:active{transform:scale(.988);}
+.join svg{width:20px;height:20px;flex:none;}
+.join.secondary{
+  background:transparent;color:var(--ink);
+  border:1px solid var(--line);box-shadow:none;
+}
+.join.secondary:hover{background:var(--raise);}
+
+.sub{
+  display:block;width:100%;text-align:center;margin-top:14px;
+  color:var(--muted);font-size:var(--step-0);
+  padding:6px;
+}
+.sub:hover{color:var(--ink);}
+
+/* ---------- roster ---------- */
+.rule{height:1px;background:var(--line);border:0;margin:32px 0 0;}
+.sectitle{
+  font-size:var(--step--1);letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--muted);margin:26px 0 0;
+}
+
+.heatrow{
+  display:flex;align-items:flex-start;gap:14px;
+  padding:15px 0;border-bottom:1px solid var(--line);
+}
+.heatrow:last-child{border-bottom:0;}
+.htime{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:1.25rem;letter-spacing:-0.01em;width:82px;flex:none;
+  color:var(--ink);
+}
+.heatrow.isfull .htime{color:var(--muted);text-decoration:line-through;text-decoration-thickness:2px;}
+.heatrow.mine .htime{color:var(--cyan);}
+.hbody{flex:1;min-width:0;}
+.hnames{color:var(--muted);font-size:var(--step-0);line-height:1.45;}
+.hnames b{color:var(--ink);font-weight:500;}
+.hstate{
+  font-size:var(--step--1);letter-spacing:0.05em;text-transform:uppercase;
+  color:var(--muted);margin-top:5px;
+}
+.hstate.low{color:var(--red-ink);}
+.hcount{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:1rem;color:var(--muted);flex:none;
+}
+
+/* any heat with room is joinable straight from the roster */
+button.heatrow{
+  width:100%;background:none;border:0;border-bottom:1px solid var(--line);
+  font:inherit;color:inherit;text-align:left;cursor:pointer;padding:15px 0;
+}
+button.heatrow:last-of-type{border-bottom:0;}
+button.heatrow:hover .htime,button.heatrow:focus-visible .htime{color:var(--cyan);}
+button.heatrow:hover .hgo,button.heatrow:focus-visible .hgo{opacity:1;transform:translateX(2px);}
+.hgo{
+  width:16px;height:16px;flex:none;color:var(--cyan);opacity:0;align-self:center;
+  transition:opacity .16s var(--ease),transform .16s var(--ease);
+}
+.hgo svg{width:100%;height:100%;display:block;}
+@media (hover:none){ .hgo{opacity:.5;} }
+.rosterhint{color:var(--muted);font-size:var(--step--1);margin:6px 0 0;}
+.htime.hlabel{
+  font-family:'Jost',sans-serif;font-weight:600;font-size:.75rem;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+  line-height:1.35;padding-top:3px;
+}
+.ctanote{color:var(--muted);font-size:var(--step--1);margin:10px 0 0;text-align:center;}
+.join.secondary.alt{margin-top:12px;font-size:1rem;padding:14px 18px;justify-content:center;}
+
+.expand{
+  width:100%;padding:13px 0;color:var(--cyan);
+  font-size:var(--step-0);font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.expand svg{width:14px;height:14px;transition:transform .2s var(--ease);}
+.expand[aria-expanded="true"] svg{transform:rotate(180deg);}
+
+/* ---------- facts ---------- */
+.facts{margin-top:8px;}
+.fact{
+  display:flex;gap:14px;padding:13px 0;
+  border-bottom:1px solid var(--line);
+  font-size:var(--step-0);
+}
+.fact:last-child{border-bottom:0;}
+.fact dt{color:var(--muted);width:82px;flex:none;
+  font-size:var(--step--1);letter-spacing:0.06em;text-transform:uppercase;padding-top:2px;}
+.fact dd{margin:0;flex:1;}
+.fact dd b{font-weight:600;}
+.cause-line{color:var(--cyan);font-weight:600;}
+
+/* ---------- share ---------- */
+.share{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;margin-top:26px;padding:15px;
+  border:1px solid var(--line);border-radius:var(--radius);
+  color:var(--muted);font-weight:600;font-size:var(--step-0);
+  transition:border-color .18s var(--ease),color .18s var(--ease);
+}
+.share:hover{border-color:var(--cyan-deep);color:var(--ink);}
+.share svg{width:17px;height:17px;}
+
+/* ---------- flow ---------- */
+.flowbar{
+  position:sticky;top:0;z-index:5;
+  background:linear-gradient(var(--ground) 72%,transparent);
+  padding:14px var(--pad) 16px;max-width:440px;margin:0 auto;
+  display:flex;align-items:center;gap:12px;
+}
+.back{width:34px;height:34px;display:grid;place-items:center;
+  border:1px solid var(--line);border-radius:var(--radius);flex:none;color:var(--muted);}
+.back:hover{color:var(--ink);border-color:var(--cyan-deep);}
+.back svg{width:16px;height:16px;}
+.steps{display:flex;gap:5px;flex:1;}
+.steps i{height:2px;flex:1;background:var(--line);border-radius:2px;}
+.steps i.on{background:var(--cyan);}
+.steps i.done{background:var(--cyan-deep);}
+.total{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:1.0625rem;flex:none;
+}
+.total.zero{color:var(--muted);}
+
+.q{font-size:clamp(1.75rem,7vw,2.25rem);margin:8px 0 0;font-weight:700;}
+.qsub{color:var(--muted);margin:9px 0 0;font-size:var(--step-0);max-width:36ch;}
+
+.opt{
+  display:flex;align-items:center;gap:14px;width:100%;
+  padding:16px 0;border-bottom:1px solid var(--line);
+  transition:opacity .18s var(--ease);
+}
+.opt:last-of-type{border-bottom:0;}
+.opt .radio,.heatpick .radio{
+  width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);
+  flex:none;display:grid;place-items:center;transition:border-color .18s var(--ease);
+}
+.opt .radio i,.heatpick .radio i{width:11px;height:11px;border-radius:50%;background:var(--cyan);transform:scale(0);
+  transition:transform .2s var(--ease);}
+.opt[aria-checked="true"] .radio,.heatpick[aria-checked="true"] .radio{border-color:var(--cyan);}
+.opt[aria-checked="true"] .radio i,.heatpick[aria-checked="true"] .radio i{transform:scale(1);}
+.opt .body{flex:1;min-width:0;}
+.opt .t{font-family:'Play',sans-serif;font-weight:700;
+  text-transform:uppercase;font-size:1.0625rem;letter-spacing:0.005em;}
+.opt .s{color:var(--muted);font-size:var(--step--1);margin-top:3px;}
+.opt .p{font-family:'Play',sans-serif;font-weight:700;
+  font-size:1.125rem;flex:none;}
+.opt.off{opacity:.4;pointer-events:none;}
+
+.toggle{
+  display:flex;align-items:center;gap:13px;width:100%;
+  margin-top:22px;padding:15px;border:1px solid var(--line);border-radius:var(--radius);
+}
+.switch{
+  width:44px;height:26px;border-radius:99px;background:var(--raise-2);
+  border:1px solid var(--line);flex:none;position:relative;transition:background .2s var(--ease);
+}
+.switch i{
+  position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--muted);transition:transform .22s var(--ease),background .2s var(--ease);
+}
+.toggle[aria-checked="true"] .switch{background:var(--cyan-deep);border-color:var(--cyan-deep);}
+.toggle[aria-checked="true"] .switch i{transform:translateX(18px);background:var(--ink);}
+.toggle .body{flex:1;}
+.toggle .t{font-weight:600;}
+.toggle .s{color:var(--muted);font-size:var(--step--1);margin-top:2px;}
+
+.heatpick{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+  padding:15px 0;border-bottom:1px solid var(--line);
+}
+.heatpick .lt{display:flex;align-items:center;gap:14px;min-width:0;}
+.heatpick .tm{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:1.375rem;width:86px;flex:none;
+}
+.heatpick .who{color:var(--muted);font-size:var(--step--1);}
+.heatpick .who b{color:var(--cyan);font-weight:600;}
+.heatpick .htag{
+  display:inline-block;margin-right:8px;padding:2px 7px;border-radius:4px;
+  border:1px solid var(--line);color:var(--muted);
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:0.6875rem;letter-spacing:.1em;text-transform:uppercase;vertical-align:1px;
+}
+.heatpick[aria-checked="true"] .htag{border-color:var(--cyan);color:var(--cyan);}
+.heatpick .rm{font-size:var(--step--1);color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;flex:none;}
+.heatpick .rm.low{color:var(--red-ink);}
+.heatpick.full{opacity:.42;pointer-events:none;}
+.heatpick.full .tm{text-decoration:line-through;text-decoration-thickness:2px;}
+.heatpick[aria-checked="true"]{border-bottom-color:var(--cyan);}
+.heatpick[aria-checked="true"] .tm{color:var(--cyan);}
+
+.runner{
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px;margin-top:12px;
+}
+.runner .rhead{display:flex;align-items:center;gap:10px;margin-bottom:11px;}
+.runner .rn{
+  font-family:'Play',sans-serif;font-weight:700;
+  text-transform:uppercase;font-size:var(--step--1);letter-spacing:0.08em;color:var(--muted);flex:1;
+}
+.runner .rm{color:var(--muted);font-size:var(--step--1);}
+.runner .rm:hover{color:var(--red-ink);}
+.field{
+  width:100%;background:var(--raise);border:1px solid var(--line);
+  border-radius:var(--radius);padding:13px 14px;color:var(--ink);
+  font-size:1rem;transition:border-color .18s var(--ease);
+}
+.field::placeholder{color:#7A8699;}
+.field:focus{border-color:var(--cyan);outline:none;}
+.fieldrow{display:flex;gap:10px;}
+.addrunner{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  margin-top:12px;padding:15px;border:1px dashed var(--line);border-radius:var(--radius);
+  color:var(--cyan);font-weight:600;
+}
+.addrunner:hover{border-color:var(--cyan-deep);background:var(--raise);}
+.addrunner svg{width:15px;height:15px;}
+
+.sumrow{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:baseline;}
+.sumrow .l{flex:1;min-width:0;}
+.sumrow .l .n{font-weight:600;}
+.sumrow .l .m{color:var(--muted);font-size:var(--step--1);margin-top:2px;}
+.sumrow .r{font-family:'Play',sans-serif;font-weight:700;flex:none;}
+.sumtotal{display:flex;justify-content:space-between;align-items:baseline;padding:17px 0 0;}
+.sumtotal .lab{font-size:var(--step--1);letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);}
+.sumtotal .val{font-family:'Play',sans-serif;font-weight:700;font-size:2rem;}
+
+.waiver{
+  display:flex;gap:13px;width:100%;align-items:flex-start;
+  margin-top:22px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);
+  transition:border-color .18s var(--ease);
+}
+.waiver[aria-checked="true"]{border-color:var(--cyan-deep);}
+.waiver .box{
+  width:22px;height:22px;border-radius:2px;border:1.5px solid var(--line);flex:none;
+  display:grid;place-items:center;margin-top:1px;transition:all .18s var(--ease);
+}
+.waiver[aria-checked="true"] .box{background:var(--cyan);border-color:var(--cyan);}
+.waiver .box svg{width:13px;height:13px;color:#06101C;opacity:0;transition:opacity .15s var(--ease);}
+.waiver[aria-checked="true"] .box svg{opacity:1;}
+.waiver .body{flex:1;font-size:var(--step-0);line-height:1.45;}
+.waiver .body .note{color:var(--muted);font-size:var(--step--1);margin-top:4px;}
+
+.handoff{
+  margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);
+  display:flex;gap:11px;color:var(--muted);font-size:var(--step--1);line-height:1.45;
+}
+.handoff svg{width:16px;height:16px;flex:none;color:var(--muted);margin-top:2px;}
+
+/* ---------- handoff + confirm ---------- */
+.center{
+  min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:40px var(--pad);max-width:440px;margin:0 auto;
+}
+.spinner{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);
+  border-top-color:var(--cyan);animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.stamp{
+  display:inline-grid;place-items:center;width:78px;height:78px;border-radius:50%;
+  border:2px solid var(--ok);color:var(--ok);
+  animation:stamp .5s var(--ease) both;
+}
+.stamp svg{width:36px;height:36px;}
+@keyframes stamp{
+  0%{transform:scale(1.5);opacity:0;filter:blur(6px);}
+  100%{transform:scale(1);opacity:1;filter:blur(0);}
+}
+.pending{
+  display:flex;gap:11px;align-items:flex-start;text-align:left;
+  margin-top:26px;padding:14px;border:1px solid var(--line);border-radius:var(--radius);
+  color:var(--muted);font-size:var(--step--1);line-height:1.45;width:100%;
+}
+.pending .pd{width:7px;height:7px;border-radius:50%;background:var(--cyan);flex:none;margin-top:6px;
+  animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+
+/* ---------- preview card ---------- */
+.imsg{
+  background:#1C1C1E;border-radius:18px;overflow:hidden;margin-top:18px;
+  border:1px solid #2C2C2E;
+}
+.ogcard{
+  aspect-ratio:1200/630;background:var(--ground);
+  display:flex;flex-direction:column;padding:18px;
+  background-image:radial-gradient(120% 90% at 78% 12%,rgba(79,199,232,.16),transparent 62%);
+  border-bottom:1px solid #2C2C2E;overflow:hidden;
+}
+.ogcard .og-body{margin-top:auto;min-width:0;}
+.ogcard .og-g{font-family:'Play',sans-serif;font-weight:700;
+  text-transform:uppercase;font-size:clamp(1.0625rem,5.2vw,1.5rem);line-height:.98;
+  letter-spacing:-0.015em;}
+.ogcard .og-t{font-family:'Play',sans-serif;font-weight:700;
+  color:var(--cyan);font-size:clamp(.875rem,3.6vw,1.0625rem);margin-top:6px;}
+.ogcard .og-m{color:var(--muted);font-size:.6875rem;margin-top:4px;letter-spacing:.05em;text-transform:uppercase;}
+.ogcard .og-h{display:flex;align-items:center;gap:6px;flex:none;}
+.ogcard .og-h span{font-family:'Orbitron','Play',sans-serif;font-weight:800;
+  font-size:.625rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);}
+.imsg .meta{padding:11px 14px;font-size:var(--step--1);color:#8E8E93;}
+.bubble{
+  background:#3A3A3C;color:#fff;border-radius:18px;padding:9px 14px;
+  font-size:0.9375rem;max-width:82%;margin-top:10px;
+}
+.bubble.me{background:#0B84FF;margin-left:auto;}
+
+/* ---------- demo ---------- */
+.demobtn{
+  position:fixed;right:14px;bottom:14px;z-index:40;
+  width:46px;height:46px;border-radius:50%;
+  background:var(--raise-2);border:1px solid var(--line);
+  display:grid;place-items:center;color:var(--muted);
+  box-shadow:0 12px 28px -14px rgba(0,0,0,.9);
+}
+.demobtn:hover{color:var(--cyan);border-color:var(--cyan-deep);}
+.demobtn svg{width:19px;height:19px;}
+.demo{
+  position:fixed;inset:auto 12px 70px 12px;z-index:41;max-width:414px;margin:0 auto;
+  background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:16px;
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.95);
+  display:none;
+}
+.demo.open{display:block;}
+.demo h4{margin:0 0 3px;font-size:var(--step--1);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  font-family:'Jost',sans-serif;font-weight:600;}
+.demo p{margin:0 0 13px;color:var(--muted);font-size:var(--step--1);line-height:1.4;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.chip{
+  padding:8px 12px;border:1px solid var(--line);border-radius:99px;
+  font-size:var(--step--1);color:var(--muted);font-weight:600;
+}
+.chip.on{border-color:var(--cyan);color:var(--cyan);background:rgba(79,199,232,.08);}
+.chip:hover{color:var(--ink);}
+
+/* ---------- site nav + footer ---------- */
+.nav{
+  position:sticky;top:0;z-index:20;
+  background:rgba(11,18,32,.86);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.nav-in{
+  max-width:1040px;margin:0 auto;padding:12px var(--pad);
+  display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:9px;flex:none;cursor:pointer;}
+.brand:hover .wordmark{color:var(--cyan);}
+.brand:hover .mark{opacity:.85;}
+.brand .wordmark,.brand .mark{transition:color .16s var(--ease),opacity .16s var(--ease);}
+.brand.mini{margin-left:2px;padding-right:4px;}
+.brand.mini .mark{width:23px;height:26px;}
+.nav .links{
+  display:flex;gap:20px;margin-left:auto;align-items:center;
+  min-width:0;flex-wrap:wrap;
+}
+/* On a phone the links drop to their own row rather than pushing the page
+   wider than the viewport, which is what made iOS zoom out and clip the right. */
+/* On a phone: brand and Register hold the first row and never move, the section
+   links scroll on their own row underneath. Register lived inside that scrolling
+   row before, which pushed it off the right edge of the screen. */
+@media (max-width:719px){
+  .nav-in{gap:10px;padding:10px var(--pad);}
+  .nav .brand{order:1;margin-right:auto;}
+  .nav .navcta{order:2;padding:9px 13px;flex:none;}
+  .nav .links{
+    order:3;width:100%;margin-left:0;gap:18px;
+    flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .nav .links::-webkit-scrollbar{display:none;}
+}
+.nav a,.nav button.navlink{
+  color:var(--muted);font-size:var(--step--1);font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+  padding:6px 0;border-bottom:2px solid transparent;
+  /* the global min-width:0 that fixes page overflow would otherwise let these
+     shrink below their own text and collide, so hold them at their width */
+  flex:0 0 auto;
+}
+.nav button.navlink:hover{color:var(--ink);}
+.nav button.navlink.on{color:var(--ink);border-bottom-color:var(--cyan);}
+.nav .navcta{
+  background:var(--cyan);color:#06101C;border-radius:var(--radius);
+  padding:9px 14px;font-family:'Play',sans-serif;
+  font-weight:700;text-transform:uppercase;
+  font-size:.8125rem;letter-spacing:.02em;border-bottom:0;flex:none;
+}
+.nav .navcta:hover{background:#6BD5F0;color:#06101C;}
+
+.foot{border-top:1px solid var(--line);margin-top:64px;}
+.foot-in{max-width:1040px;margin:0 auto;padding:36px var(--pad) 64px;}
+.foot .fl{display:flex;flex-wrap:wrap;gap:26px 40px;}
+.foot h4{
+  font-family:'Jost',sans-serif;font-size:var(--step--1);font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;
+}
+.foot ul{list-style:none;margin:0;padding:0;display:grid;gap:8px;}
+.foot a,.foot button.flink{color:var(--ink);font-size:var(--step-0);text-align:left;}
+.foot button.flink:hover,.foot a:hover{color:var(--cyan);}
+.foot .fbottom{
+  margin-top:32px;padding-top:20px;border-top:1px solid var(--line);
+  color:#6E7A8C;font-size:.8125rem;line-height:1.6;
+}
+
+/* ---------- home hero ---------- */
+.hero{position:relative;min-height:min(82svh,720px);display:flex;align-items:flex-end;}
+.hero-in{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 var(--pad) 52px;width:100%;}
+.hero .kicker{
+  display:flex;align-items:center;gap:10px;color:var(--cyan);
+  font-size:var(--step--1);letter-spacing:.12em;text-transform:uppercase;font-weight:600;
+}
+.hero .kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--red);}
+/* the event name itself, so it takes the logo's face. Orbitron sets much wider
+   than Play, so the size steps down to keep it inside a phone screen. */
+.hero h1{
+  font-family:'Orbitron','Play',sans-serif;
+  font-size:clamp(1.75rem,8.2vw,5rem);margin:14px 0 0;
+  font-weight:800;letter-spacing:-0.02em;line-height:1.02;
+}
+.hero .when{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:clamp(1.125rem,4.5vw,1.75rem);margin-top:12px;
+}
+.hero .when span{color:var(--cyan);}
+.hero .sub{color:var(--muted);margin-top:12px;font-size:var(--step-1);max-width:44ch;}
+.hero .acts{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px;}
+.hero .acts .join{margin-top:0;width:auto;min-width:220px;}
+.hero .acts .join.secondary{background:rgba(11,18,32,.5);}
+
+.band{border-top:1px solid var(--line);}
+.band-in{max-width:1040px;margin:0 auto;padding:52px var(--pad);}
+.cols{display:grid;gap:34px;}
+@media (min-width:760px){ .cols.two{grid-template-columns:1fr 1fr;gap:56px;} }
+
+.tierrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+.tiername{
+  border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 14px;font-size:var(--step-0);color:var(--ink);
+}
+.tiername.title{
+  border-color:var(--cyan);color:var(--cyan);
+  font-family:'Play',sans-serif;font-weight:700;
+  text-transform:uppercase;font-size:1.125rem;letter-spacing:.02em;
+}
+.tiername.arena{border-color:var(--cyan-deep);}
+a.tiername.linked{
+  display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+  transition:border-color .16s var(--ease),color .16s var(--ease);
+}
+a.tiername.linked:hover{border-color:var(--cyan);color:var(--cyan);}
+a.tiername.linked .extico{width:12px;height:12px;opacity:.45;flex:none;}
+a.tiername.linked:hover .extico{opacity:1;}
+a.tiername.title .extico{width:13px;height:13px;}
+
+a.ext{color:var(--cyan);text-decoration:none;border-bottom:1px solid rgba(79,199,232,.35);}
+a.ext:hover{border-bottom-color:var(--cyan);}
+a.ext .extico{width:11px;height:11px;margin-left:4px;opacity:.6;vertical-align:baseline;}
+a.ext:hover .extico{opacity:1;}
+.tierlabel{
+  font-size:var(--step--1);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin:26px 0 0;
+}
+
+.qa{border-bottom:1px solid var(--line);padding:18px 0;}
+.qa:last-of-type{border-bottom:0;}
+.qa dt{
+  font-family:'Play',sans-serif;font-weight:700;
+  text-transform:uppercase;font-size:1.0625rem;letter-spacing:.01em;
+}
+.qa dd{margin:8px 0 0;color:var(--muted);line-height:1.6;max-width:62ch;}
+
+.lb{width:100%;border-collapse:collapse;margin-top:14px;}
+.lb th{
+  text-align:left;font-size:var(--step--1);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;padding:0 0 10px;border-bottom:1px solid var(--line);
+}
+.lb th.r,.lb td.r{text-align:right;}
+.lb td{padding:14px 0;border-bottom:1px solid var(--line);}
+.lb .rank{
+  font-family:'Play',sans-serif;font-weight:700;
+  color:var(--muted);width:38px;
+}
+.lb tr.lead .rank{color:var(--cyan);}
+.lb tr.lead .org{font-weight:600;}
+.lb .cnt{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:1.125rem;
+}
+.lb .prize{color:var(--cyan);font-size:var(--step--1);letter-spacing:.05em;text-transform:uppercase;}
+
+/* ---------- generic page furniture ---------- */
+.page{max-width:1040px;margin:0 auto;padding:0 var(--pad);}
+.page.narrow{max-width:660px;}
+.ptitle{
+  font-size:clamp(2.5rem,10vw,4.25rem);margin:34px 0 0;
+  font-weight:700;
+}
+.pintro{
+  color:var(--muted);font-size:var(--step-1);line-height:1.5;
+  margin:16px 0 0;max-width:60ch;
+}
+.pintro b{color:var(--ink);font-weight:600;}
+.h2{
+  font-size:clamp(1.5rem,5vw,2rem);margin:52px 0 0;
+  font-weight:700;
+}
+.body-copy{max-width:64ch;margin:14px 0 0;line-height:1.65;color:var(--ink);}
+.body-copy + .body-copy{margin-top:14px;}
+.muted{color:var(--muted);}
+
+.statline{
+  display:flex;flex-wrap:wrap;gap:32px 48px;margin:28px 0 0;
+  padding:22px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+}
+.stat .v{
+  font-family:'Play',sans-serif;font-weight:700;
+  font-size:clamp(1.75rem,6vw,2.5rem);color:var(--cyan);line-height:1;
+}
+.stat .k{
+  font-size:var(--step--1);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);margin-top:7px;
+}
+
+.notice{
+  display:flex;gap:12px;margin:22px 0 0;padding:15px;
+  border:1px solid var(--line);border-radius:var(--radius);
+  color:var(--muted);font-size:var(--step--1);line-height:1.5;
+}
+.notice b{color:var(--ink);}
+
+.disclaimer{
+  margin-top:30px;padding-top:18px;border-top:1px solid var(--line);
+  color:#6E7A8C;font-size:0.75rem;line-height:1.5;
+}
+
+.g-aside{display:none;}
+
+@media (min-width:900px){
+  .g-aside{display:block;position:sticky;top:28px;}
+  .g-aside-mob{display:none;}
+  .g-two{display:grid;grid-template-columns:1fr 340px;gap:56px;align-items:start;max-width:900px;}
+  .wrap.wide{max-width:900px;}
+  .top{max-width:900px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;}
+}
+</style>
+</head>
+<body>
+<!--
+THESIS: The category read straight, a race site, refusing the concept-world detour and the OCR habit of selling mud while burying the schedule. Here the schedule is the product.
+OWN-WORLD: Navy ground, cyan owning every time and count, red only for scarcity. Play caps for times, names and totals and Jost for prose, both carried over from the org's own site. Rules and rows, never cards as structure.
+STORY: A friend's link lands mid group chat. The visitor sees who is running and when, taps one time, and is registered before the thread moves on.
+FIRST VIEWPORT: Group name in expanded caps, the suggested heat time at display scale in cyan, the runners in it, spots remaining, and one full-width join control carrying that time.
+FORM: Canon, taken as the standing exit after two re-rolls; craft bar Spartan, Strava, Partiful; seed key f36d3c6a.
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+
+<div class="herovid" id="herovid" aria-hidden="true">
+  <video id="herovideo" autoplay muted loop playsinline preload="auto" tabindex="-1"></video>
+</div>
+
+<div id="app"></div>
+
+<button class="demobtn" id="demobtn" aria-label="Prototype scenarios">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="2.6"/></svg>
+</button>
+
+<div class="demo" id="demo">
+  <h4>Prototype scenarios</h4>
+  <p>Switch the underlying data to see how each state behaves. Not part of the design.</p>
+  <div class="chips" id="scenarios"></div>
+  <h4>Jump to</h4>
+  <div class="chips" id="jumps"></div>
+</div>
+
+<script>
+/* ============================ mock data ============================ */
+const ASSET_HELMET = './media/opt-helmet.png';      /* __ASSET_HELMET__ */
+const ASSET_WORDS  = './media/words-white.png';   /* __ASSET_WORDS__ */
+const ASSET_VIDEO  = './media/hero-480.mp4';      /* __ASSET_VIDEO__ */
+
+const HELMET = h => `<img class="helmet" style="--h:${h||'28px'}" src="${ASSET_HELMET}" alt="">`;
+const WORDSFILL = `<span class="crop words two fill"><img src="${ASSET_WORDS}" alt="One Army Gladiator Dash"></span>`;
+const WORDS  = h => `<span class="crop words" style="--h:${h}"><img src="${ASSET_WORDS}" alt="Gladiator Dash"></span>`;
+
+const TICKETS = [
+  {id:'comp',    name:'Competitive',     sub:'Timed. Race the clock and everyone in your heat.', student:30, open:35, heat:true},
+  {id:'noncomp', name:'Non-Competitive', sub:'Same course, same obstacles, no clock.',           student:25, open:30, heat:true},
+  {id:'endur',   name:'Endurance',       sub:'Starts with the first heat. Run as long as you want.', flat:40, heat:false},
+  {id:'arena',   name:'Arena',           sub:'Event area access. No course, no heat.',           flat:10, heat:false}
+];
+
+const HEAT_TIMES = ['9:00','9:15','9:30','9:45','10:00','10:15','10:30','10:45','11:00','11:15'];
+
+// Some heats are designated Corps heats. Per the org (2026-08-24) this is a LABEL on
+// the heat picker only — it is not a separate ticket, not a separate category, and
+// nothing enforces who may pick one. Placeholder times until the real schedule lands.
+const CORPS_HEATS = ['9:15','10:00','10:45'];
+
+const SCENARIOS = {
+  friends:{
+    label:'Friend group (5)',
+    group:{name:'Mud Boys', slug:'mud-boys-x82k', type:'custom'},
+    members:[
+      {n:'Jacob P.', h:'9:30'},{n:'Ryan M.', h:'9:30'},{n:'Connor B.', h:'9:30'},
+      {n:'Sam T.', h:'9:45'},{n:'Luke C.', h:'9:45'}
+    ],
+    caps:{'9:00':4,'9:15':0,'9:30':17,'9:45':22,'10:00':30,'10:15':30,'10:30':30,'10:45':30,'11:00':30,'11:15':30}
+  },
+  outfit:{
+    label:'Corps outfit (34)',
+    group:{name:'Squadron 17', slug:'squadron-17-4KQ2', type:'official'},
+    members:[
+      {n:'Jacob P.',h:'9:00'},{n:'Ryan M.',h:'9:00'},{n:'Connor B.',h:'9:00'},{n:'Sam T.',h:'9:00'},
+      {n:'Luke C.',h:'9:15'},{n:'Matt R.',h:'9:15'},{n:'Drew K.',h:'9:15'},
+      {n:'Cole H.',h:'9:30'},{n:'Wes A.',h:'9:30'},{n:'Trey L.',h:'9:30'},{n:'Nate D.',h:'9:30'},
+      {n:'Brooks V.',h:'9:30'},{n:'Cade W.',h:'9:30'},{n:'Reid S.',h:'9:30'},
+      {n:'Jay F.',h:'9:45'},{n:'Owen G.',h:'9:45'},{n:'Tate M.',h:'9:45'},{n:'Beau R.',h:'9:45'},
+      {n:'Knox P.',h:'10:00'},{n:'Cash B.',h:'10:00'},{n:'Rhett T.',h:'10:00'},
+      {n:'Ford N.',h:'10:15'},{n:'Gage L.',h:'10:15'},
+      {n:'Hayes O.',h:'10:30'},{n:'Boone C.',h:'10:30'},{n:'Crew J.',h:'10:30'},
+      {n:'Lane K.',h:'10:45'},{n:'Colt D.',h:'10:45'},
+      {n:'Zane W.',h:'11:00'},{n:'Ace M.',h:'11:00'},{n:'Rye S.',h:'11:00'},
+      {n:'Dax H.',h:'ENDURANCE'},{n:'Sage B.',h:'ARENA'},{n:'Pike R.',h:'ARENA'}
+    ],
+    caps:{'9:00':0,'9:15':6,'9:30':2,'9:45':11,'10:00':19,'10:15':24,'10:30':21,'10:45':28,'11:00':26,'11:15':30}
+  },
+  seed:{
+    label:'Seed state (1)',
+    group:{name:'Mud Boys', slug:'mud-boys-x82k', type:'custom'},
+    members:[{n:'Jacob P.', h:'9:30'}],
+    caps:{'9:00':24,'9:15':26,'9:30':29,'9:45':30,'10:00':30,'10:15':30,'10:30':30,'10:45':30,'11:00':30,'11:15':30}
+  },
+  theirsfull:{
+    label:'Their heats full',
+    group:{name:'Mud Boys', slug:'mud-boys-x82k', type:'custom'},
+    members:[
+      {n:'Jacob P.', h:'9:30'},{n:'Ryan M.', h:'9:30'},{n:'Connor B.', h:'9:30'},
+      {n:'Sam T.', h:'9:45'},{n:'Luke C.', h:'9:45'},
+      {n:'Dax H.', h:'ENDURANCE'},{n:'Cole R.', h:'ENDURANCE'},
+      {n:'Sage B.', h:'ARENA'},{n:'Pike R.', h:'ARENA'}
+    ],
+    caps:{'9:00':0,'9:15':0,'9:30':0,'9:45':0,'10:00':14,'10:15':21,'10:30':26,'10:45':30,'11:00':30,'11:15':30}
+  },
+  allfull:{
+    label:'Everything full',
+    group:{name:'Mud Boys', slug:'mud-boys-x82k', type:'custom'},
+    members:[
+      {n:'Jacob P.', h:'9:30'},{n:'Ryan M.', h:'9:30'},{n:'Connor B.', h:'9:45'},
+      {n:'Sam T.', h:'10:00'},{n:'Luke C.', h:'10:15'}
+    ],
+    caps:{'9:00':0,'9:15':0,'9:30':0,'9:45':0,'10:00':0,'10:15':0,'10:30':0,'10:45':0,'11:00':0,'11:15':0}
+  }
+};
+
+const REVEAL_THRESHOLD = 3;   // org decision: the counter's reveal threshold applies to group pages too
+
+/* ============================ state ============================ */
+let S = {
+  scen:'friends',
+  view:'home',
+  hist:[],
+  ticket:null,
+  student:true,
+  heat:null,
+  runners:[{first:'',last:''}],
+  waiver:false,
+  rosterOpen:false
+};
+const D = () => SCENARIOS[S.scen];
+
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const initials = n => n.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+const ampm = t => { const h=+t.split(':')[0]; return h<12?'AM':'PM'; };
+const inHeat = t => D().members.filter(m=>m.h===t);
+const heatCap = t => D().caps[t] ?? 30;
+const noHeat = () => D().members.filter(m=>m.h==='ENDURANCE'||m.h==='ARENA');
+const racing = () => D().members.filter(m=>m.h!=='ENDURANCE'&&m.h!=='ARENA');
+
+const toMin = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+
+/* The rule: the heat holding the most group members that still has room.
+   When every heat the group is in has filled, fall back to the open heat
+   CLOSEST IN TIME to where they are, not the earliest of the day, which is
+   what a naive scan returns and which can be hours away from your friends. */
+function suggestedHeat(){
+  const open = HEAT_TIMES.filter(t=>heatCap(t)>0);
+  if(!open.length) return null;
+
+  let best=null, bestN=0;
+  for(const t of open){
+    const n = inHeat(t).length;
+    if(n>bestN){ bestN=n; best=t; }
+  }
+  if(best) return best;
+
+  const theirs = HEAT_TIMES.filter(t=>inHeat(t).length>0).map(toMin);
+  if(!theirs.length) return open[0];
+  let pick=open[0], bestD=Infinity;
+  for(const t of open){
+    const d = Math.min(...theirs.map(x=>Math.abs(toMin(t)-x)));
+    if(d<bestD){ bestD=d; pick=t; }
+  }
+  return pick;
+}
+
+/* true when the group's own heats are all full and we're offering a neighbour */
+function isDisplaced(sug){
+  return !!sug && inHeat(sug).length===0 && racing().length>0;
+}
+function ticketOf(id){ return TICKETS.find(t=>t.id===id); }
+function priceOf(t){ return t.flat ?? (S.student ? t.student : t.open); }
+function total(){ const t=ticketOf(S.ticket); return t ? priceOf(t)*S.runners.length : 0; }
+
+const ICON = {
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>',
+  chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>',
+  share:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  ext:'<svg class="extico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+};
+
+/* ============================ views ============================ */
+function topBar(){
+  return `<div class="top">
+    <button class="brand" data-go="home" aria-label="Gladiator Dash home">
+      ${HELMET('26px')}${WORDS('15px')}
+    </button>
+    <div class="cause">Benefiting Still Creek Ranch</div>
+  </div>`;
+}
+
+function viewGroup(){
+  const d=D(), sug=suggestedHeat(), n=racing().length + noHeat().length;
+  const showCount = n >= REVEAL_THRESHOLD;
+  const mates = sug ? inHeat(sug) : [];
+  const cap = sug ? heatCap(sug) : 0;
+  const allFull = !sug;
+
+  const heatsWithPeople = HEAT_TIMES.filter(t=>inHeat(t).length>0);
+  const collapse = heatsWithPeople.length>4 && !S.rosterOpen;
+  const shown = collapse ? heatsWithPeople.slice(0,4) : heatsWithPeople;
+
+  const displaced = isDisplaced(sug);
+
+  let head;
+  if(allFull){
+    head = `<p class="lede">Every heat is full. <b>Arena tickets</b> are still available, event area access, no course.</p>`;
+  } else if(displaced){
+    head = `<p class="lede">Every heat <b>${esc(d.group.name)}</b> is in has filled. The closest one with room:</p>`;
+  } else if(mates.length===0){
+    head = `<p class="lede">Nobody has claimed a time yet. <b>Pick one and the rest will follow you.</b></p>`;
+  } else if(n===1){
+    head = `<p class="lede"><b>${esc(mates[0].n.split(' ')[0])}</b> is in at ${sug}. Be the second.</p>`;
+  } else if(mates.length===n){
+    head = `<p class="lede">Your friends are running at</p>`;
+  } else if(mates.length*2 >= n){
+    head = `<p class="lede">Most of them are running at</p>`;
+  } else {
+    head = `<p class="lede"><b>${n} from ${esc(d.group.name)}</b> are in, spread across ${heatsWithPeople.length} heats. The biggest one with room left:</p>`;
+  }
+
+  const spotClass = cap===0?'full':(cap<=5?'low':'');
+  const spotText = cap===0?'Full':(cap===1?'1 spot left':`${cap} spots left`);
+
+  const arenaBtn = `<button class="join secondary alt" data-go="ticket" data-arena="1">Or take an Arena ticket, $10</button>`;
+  const ctaBlock = allFull
+    ? `<button class="join" data-go="ticket" data-arena="1">Get an Arena ticket ${ICON.arrow}</button>
+       <p class="ctanote">Event-area access, no course and no heat. $10.</p>`
+    : displaced
+    ? `<button class="join" data-join="${sug}">Join at ${sug} ${ICON.arrow}</button>
+       <button class="sub" data-go="heat">See all times</button>
+       ${arenaBtn}`
+    : `<button class="join" data-join="${sug}">Join them at ${sug} ${ICON.arrow}</button>
+       <button class="sub" data-go="heat">Pick a different time</button>`;
+
+  return `${topBar()}
+  <div class="wrap wide">
+   <div class="g-two">
+    <div>
+      <h1 class="d groupname">${esc(d.group.name)}</h1>
+      <div class="groupmeta">
+        <span>${d.group.type==='official'?'Official group':'Group'}</span>
+        ${showCount?`<span>,</span><span><b class="num">${n}</b> registered</span>`:''}
+      </div>
+
+      ${head}
+
+      ${sug?`
+      <div class="timeblock">
+        <div class="bigtime d num">${sug}<span class="ampm">${ampm(sug)}</span></div>
+        ${mates.length?`
+        <div class="faces">
+          ${mates.slice(0,4).map(m=>`<div class="face">${initials(m.n)}</div>`).join('')}
+          ${mates.length>4?`<div class="face more">+${mates.length-4}</div>`:''}
+        </div>
+        <div class="names">${mates.slice(0,3).map(m=>`<b>${esc(m.n)}</b>`).join(', ')}${mates.length>3?` and ${mates.length-3} more`:''}</div>`:''}
+        <div class="spots ${spotClass}"><span class="dot"></span>${spotText}</div>
+      </div>`:''}
+
+      <div class="g-aside-mob">
+      ${ctaBlock}
+      </div>
+
+      <hr class="rule">
+      <div class="sectitle">Who's running</div>
+      ${shown.some(t=>heatCap(t)>0)?`<p class="rosterhint">Tap any time with room to join it.</p>`:''}
+      ${shown.map(t=>{
+        const ppl=inHeat(t), c=heatCap(t), open=c>0;
+        const inner = `
+          <div class="htime num">${t} <span style="font-size:.62em">${ampm(t)}</span></div>
+          <div class="hbody">
+            <div class="hnames">${ppl.map(p=>`<b>${esc(p.n)}</b>`).join(', ')}</div>
+            <div class="hstate ${open&&c<=5?'low':''}">${open?`${c} spots left`:'Heat full'}</div>
+          </div>
+          ${showCount?`<div class="hcount num">${ppl.length}</div>`:''}
+          ${open?`<span class="hgo">${ICON.arrow}</span>`:''}`;
+        const cls = `heatrow ${open?'':'isfull'} ${t===sug?'mine':''}`;
+        return open
+          ? `<button class="${cls}" data-join="${t}" aria-label="Join the ${t} ${ampm(t)} heat, ${c} spots left">${inner}</button>`
+          : `<div class="${cls}">${inner}</div>`;
+      }).join('')}
+      ${heatsWithPeople.length>4?`
+        <button class="expand" aria-expanded="${S.rosterOpen}" data-toggle="roster">
+          ${S.rosterOpen?'Show fewer':`Show all ${heatsWithPeople.length} heats`} ${ICON.chev}
+        </button>`:''}
+
+      ${noHeat().length?`
+        <div class="sectitle">Also running, no heat time</div>
+        ${[
+          ['ENDURANCE','Endurance','Starts with the first heat'],
+          ['ARENA','Arena','Event-area access']
+        ].map(([kind,label,note])=>{
+          const ppl = d.members.filter(m=>m.h===kind);
+          if(!ppl.length) return '';
+          return `<div class="heatrow">
+            <div class="htime hlabel">${label}</div>
+            <div class="hbody">
+              <div class="hnames">${ppl.map(p=>`<b>${esc(p.n)}</b>`).join(', ')}</div>
+              <div class="hstate">${note}</div>
+            </div>
+            ${showCount?`<div class="hcount num">${ppl.length}</div>`:''}
+          </div>`;
+        }).join('')}
+      `:''}
+
+      <hr class="rule">
+      <div class="sectitle">The race</div>
+      <dl class="facts">
+        <div class="fact"><dt>When</dt><dd><b>Sunday, April 11, 2027</b></dd></div>
+        <div class="fact"><dt>Where</dt><dd>Lake Bryan</dd></div>
+        <div class="fact"><dt>Course</dt><dd>5K, 15 obstacles, one swim station. Every obstacle is challenge by choice, and the swim has a way around it.</dd></div>
+        <div class="fact"><dt>From</dt><dd><b>$25</b> for students</dd></div>
+        <div class="fact"><dt>Cause</dt><dd class="cause-line">100% of proceeds go to Still Creek Ranch</dd></div>
+      </dl>
+
+      <button class="share" data-share="1">${ICON.share} Share this group</button>
+
+      <p class="disclaimer">Prototype with placeholder data. Heat times, capacity and the reveal threshold are not final.
+      Ticket prices, event date, venue, course facts and the cause are real.</p>
+      <p style="margin-top:18px"><button class="flink" style="color:var(--cyan);font-weight:600" data-go="home"><span class="bn">Gladiator Dash</span> home &rarr;</button></p>
+    </div>
+
+    <div class="g-aside">
+      ${ctaBlock}
+    </div>
+   </div>
+  </div>`;
+}
+
+function flowBar(step){
+  const t=total();
+  return `<div class="flowbar">
+    <button class="back" data-back="1" aria-label="Back">${ICON.back}</button>
+    <button class="brand mini" data-go="home" aria-label="Gladiator Dash home">${HELMET('24px')}</button>
+    <div class="steps">${[1,2,3].map(i=>`<i class="${i<step?'done':''}${i===step?'on':''}"></i>`).join('')}</div>
+    <div class="total num ${t?'':'zero'}">${t?'$'+t:','}</div>
+  </div>`;
+}
+
+function viewTicket(){
+  return `${flowBar(1)}<div class="wrap">
+    <h1 class="d q">What are you running?</h1>
+    <p class="qsub">${S.heat?`You're joining the <b style="color:var(--cyan)">${S.heat} ${ampm(S.heat)}</b> heat.`:'Pick a format. You choose your time next.'}
+      Every entry includes a race shirt.</p>
+    <div style="margin-top:18px">
+    ${TICKETS.map(t=>{
+      const p = t.flat ?? (S.student?t.student:t.open);
+      return `<div class="opt" role="radio" tabindex="0" aria-checked="${S.ticket===t.id}" data-ticket="${t.id}">
+        <div class="radio"><i></i></div>
+        <div class="body"><div class="t">${t.name}</div><div class="s">${t.sub}</div></div>
+        <div class="p num">$${p}</div>
+      </div>`;
+    }).join('')}
+    </div>
+    <div class="toggle" role="switch" tabindex="0" aria-checked="${S.student}" data-student="1">
+      <div class="switch"><i></i></div>
+      <div class="body"><div class="t">I'm a student</div>
+      <div class="s">Honor system, we don't check. Saves $5 on Competitive and Non-Competitive.</div></div>
+    </div>
+    <button class="join ${S.ticket?'':'off'}" data-next="ticket" ${S.ticket?'':'disabled'}>${S.ticket?`Continue ${ICON.arrow}`:'Choose a ticket above'}</button>
+    <p class="disclaimer">Prices are real. Everything else here is placeholder data.</p>
+  </div>`;
+}
+
+function viewHeat(){
+  const t=ticketOf(S.ticket);
+  if(t && !t.heat){ S.view='runners'; return viewRunners(); }
+  return `${flowBar(2)}<div class="wrap">
+    <h1 class="d q">Pick your start time</h1>
+    <p class="qsub">Tap a time to choose your heat. Heats start every 10 minutes, and
+      full heats can't be picked.</p>
+    <div style="margin-top:18px" role="radiogroup" aria-label="Heat start time">
+    ${HEAT_TIMES.map(tm=>{
+      const c=heatCap(tm), ppl=inHeat(tm), corps=CORPS_HEATS.includes(tm);
+      return `<div class="heatpick ${c===0?'full':''}" role="radio" tabindex="0"
+        aria-checked="${S.heat===tm}" data-heat="${tm}">
+        <div class="lt">
+          <div class="radio"><i></i></div>
+          <div class="tm num">${tm}<span style="font-size:.6em;margin-left:.15em">${ampm(tm)}</span></div>
+          <div class="who">${corps?'<span class="htag">Corps</span>':''}${ppl.length?`<b>${ppl.length}</b> from ${esc(D().group.name)}`:''}</div>
+        </div>
+        <div class="rm ${c>0&&c<=5?'low':''}">${c===0?'Full':`${c} left`}</div>
+      </div>`;
+    }).join('')}
+    </div>
+    <button class="join ${S.heat?'':'off'}" data-next="heat" ${S.heat?'':'disabled'}>${
+      S.heat?`Continue ${ICON.arrow}`:'Select a time above'
+    }</button>
+  </div>`;
+}
+
+function viewRunners(){
+  return `${flowBar(2)}<div class="wrap">
+    <h1 class="d q">Who's running?</h1>
+    <p class="qsub">Just names for now. Everyone gets a link to fill in their own details later.</p>
+    ${S.runners.map((r,i)=>`
+      <div class="runner">
+        <div class="rhead"><div class="rn">${i===0?'You':'Runner '+(i+1)}</div>
+        ${i>0?`<button class="rm" data-del="${i}">Remove</button>`:''}</div>
+        <div class="fieldrow">
+          <input class="field" placeholder="First name" value="${esc(r.first)}" data-f="first" data-i="${i}" autocomplete="${i===0?'given-name':'off'}" enterkeyhint="next">
+          <input class="field" placeholder="Last name" value="${esc(r.last)}" data-f="last" data-i="${i}" autocomplete="${i===0?'family-name':'off'}" enterkeyhint="next">
+        </div>
+      </div>`).join('')}
+    <button class="addrunner" data-add="1">${ICON.plus} Add another runner</button>
+    <p class="qsub" style="margin-top:16px">Everyone you add gets the same ticket and heat. You can change theirs after.</p>
+    <button class="join" data-next="runners">Continue ${ICON.arrow}</button>
+  </div>`;
+}
+
+function viewReview(){
+  const t=ticketOf(S.ticket), p=priceOf(t);
+  return `${flowBar(3)}<div class="wrap">
+    <h1 class="d q">Check and pay</h1>
+    <div style="margin-top:20px">
+    ${S.runners.map((r,i)=>`
+      <div class="sumrow">
+        <div class="l"><div class="n">${esc((r.first+' '+r.last).trim()||(i===0?'You':'Runner '+(i+1)))}</div>
+        <div class="m">${t.name}${S.student&&!t.flat?', Student':''}${t.heat&&S.heat?`, ${S.heat} ${ampm(S.heat)}`:''}${D()?`, ${esc(D().group.name)}`:''}</div></div>
+        <div class="r num">$${p}</div>
+      </div>`).join('')}
+    </div>
+    <div class="sumtotal"><div class="lab">Total</div><div class="val num">$${total()}</div></div>
+
+    <div class="waiver" role="checkbox" tabindex="0" aria-checked="${S.waiver}" data-waiver="1">
+      <div class="box">${ICON.check}</div>
+      <div class="body">I've read and accept the participant waiver for everyone in this order.
+        <div class="note">Anyone under 18 needs a parent or guardian signature. We'll ask for that once, and it covers every minor in this order.</div></div>
+    </div>
+
+    <div class="handoff">${ICON.lock}
+      <div>Payment happens on Zeffy, our nonprofit payment partner, so 100% of your money reaches Still Creek Ranch. Apple Pay works there. You'll come straight back here.</div>
+    </div>
+
+    <button class="join" data-next="review" ${S.waiver?'':'disabled style="opacity:.35;pointer-events:none"'}>
+      Pay $${total()} with Apple Pay ${ICON.arrow}</button>
+    <p class="disclaimer">Prototype, no payment is taken and nothing is stored. The real flow hands off to Zeffy's checkout here.</p>
+  </div>`;
+}
+
+function viewHandoff(){
+  setTimeout(()=>{ S.view='confirm'; render(); }, 1700);
+  return `<div class="center">
+    <div class="spinner"></div>
+    <p class="qsub" style="margin-top:22px;text-align:center">Handing you to Zeffy&hellip;</p>
+  </div>`;
+}
+
+function viewConfirm(){
+  const first = (S.runners[0].first||'You').trim();
+  return `${topBar()}<div class="center" style="min-height:calc(100svh - 60px)">
+    <div class="stamp">${ICON.check}</div>
+    <h1 class="d" style="font-size:2rem;margin-top:22px">You're in</h1>
+    <p class="qsub" style="text-align:center;margin-top:10px">
+      ${S.runners.length>1?`${S.runners.length} runners`:esc(first)},
+      ${S.heat?`${S.heat} ${ampm(S.heat)}`:ticketOf(S.ticket).name}, ${esc(D().group.name)}</p>
+
+    <div class="pending"><span class="pd"></span>
+      <div><b style="color:var(--ink)">Your spot is held.</b> We're waiting on Zeffy to confirm the payment,
+      that usually lands in a few seconds and you don't need to stay here. Your ticket goes to your email either way.</div></div>
+
+    <button class="join" style="margin-top:24px" data-share="1">${ICON.share} Share your group</button>
+    <button class="sub" data-go="group">Back to ${esc(D().group.name)}</button>
+    <button class="sub" data-go="preview" style="color:var(--cyan)">See what the shared link looks like</button>
+  </div>`;
+}
+
+function viewPreview(){
+  const d=D(), n=racing().length+noHeat().length, sug=suggestedHeat();
+  const showCount = n>=REVEAL_THRESHOLD;
+  return `${topBar()}<div class="wrap">
+    <h1 class="d q" style="margin-top:24px">The link in a group chat</h1>
+    <p class="qsub">This card is generated per group and is what most people see, only the ones who tap ever reach the page.
+      Names never go on the card; it gets cached and forwarded further than the page does.</p>
+
+    <div class="imsg">
+      <div class="ogcard">
+        <div class="og-h">${HELMET('19px')}<span>Gladiator Dash</span></div>
+        <div class="og-body">
+          <div class="og-g">${showCount?`Come run with ${n}<br>from ${esc(d.group.name)}`:`Run with<br>${esc(d.group.name)}`}</div>
+          ${sug?`<div class="og-t num">${sug} ${ampm(sug)}, April 11</div>`:''}
+          <div class="og-m">Lake Bryan, 5K, 15 obstacles</div>
+        </div>
+      </div>
+      <div class="meta">gladiatordash.com</div>
+    </div>
+    <div class="bubble me" style="margin-top:14px">running the dash, come with us</div>
+
+    <p class="qsub" style="margin-top:26px">${showCount
+      ? 'Above the reveal threshold, the card carries the count, the number is the pitch.'
+      : 'Below the reveal threshold the count is suppressed, so the card leads with the group and the time instead. It never falls back to printing &ldquo;1&rdquo;.'}</p>
+
+    <button class="join secondary" style="margin-top:22px" data-go="group">Back to the group page</button>
+    <p class="disclaimer">Rendered here in HTML to show the composition. In production this is a server-generated image
+    (Open Graph tags plus a 1200&times;630 card), which is what iMessage, GroupMe and WhatsApp actually read.</p>
+  </div>`;
+}
+
+/* ============================ site content ============================
+   Sponsor names, the Giveback rules, the Endurance format and the FAQ answers
+   below are real, taken from gladiatordash.com. Prose is rewritten rather than
+   copied. Anything not yet decided is marked in the page itself.            */
+
+/* [name, url]. URLs are the ones the org already links from its own sponsors
+   page, so none of them are guesses. Sponsors with no entry there, and the
+   family sponsors, stay as plain text rather than getting an invented link. */
+const SPONSORS = {
+  title:[['Mercuria','https://www.mercuria.com']],
+  arena:[['Slate Construction','https://www.slateconstruction.com']],
+  gold:[
+    ['Wings N More','https://www.wingsnmore.com'],
+    ['Cognascents','https://www.cognascents.com'],
+    ['ELOS Water','https://www.eloswater.com'],
+    ['Monte Longos','https://www.montelongos.com'],
+    ['GFG Wealth','https://www.gfgwealth.com'],
+    ["David Gardner's Jewelers",'https://www.davidgardnersjewelers.com']
+  ],
+  silver:[
+    ['BVMMA',null],
+    ['Spival TX','https://www.spivaltx.com'],
+    ['BK Shutters','https://www.bkshutters.com'],
+    ["Slovacek's",'https://www.slovacek.com'],
+    ['Starner Commercial Real Estate','https://www.starnercommercial.com'],
+    ['Restorative Physical Therapy','https://www.rptbcs.com'],
+    ['Restore',null],['Joeris GC',null],
+    ['The Barracks','https://www.barrackstownhomes.com'],
+    ['Harwell Family',null],['Simpson Family',null],['Horstman Family',null],
+    ['Miller Family',null],['Schofield Family',null],['Narayanan Family',null],
+    ['Haralson Family',null]
+  ],
+  bronze:[
+    ['Destination Bryan',null],['Postal Plus',null],['Texas Legends Insurance',null],
+    ['Kodiak Gas',null],['McClendon Construction',null],['Copy Corner',null],
+    ['NTAG Houston',null],['Signarama',null],['PIP',null],
+    ['Rafter Construction',null],["Meyer's Jewelry",null]
+  ]
+};
+
+const SCR_URL = 'https://www.stillcreekranch.org';
+
+/* one renderer for a sponsor, linked or not */
+const sponsorChip = ([name,url],cls='') => url
+  ? `<a class="tiername ${cls} linked" href="${url}" target="_blank" rel="noopener">${esc(name)}${ICON.ext}</a>`
+  : `<span class="tiername ${cls}">${esc(name)}</span>`;
+
+const GIVEBACK_CATS = [
+  {id:'mw',    name:"Men's & Women's Organizations"},
+  {id:'greek', name:'Greek Life'},
+  {id:'flo',   name:"FLOs & SLOs"},
+  {id:'corps', name:'Corps of Cadets & Other'}
+];
+
+/* placeholder standings, real counts come from registrations */
+const STANDINGS = {
+  mw:[['One Army',48],['Aggie Wranglers',31],['Fish Aides',22],['Big Event Committee',15]],
+  greek:[['Kappa Alpha Theta',54],['Sigma Chi',41],['Pi Beta Phi',37],['Phi Delta Theta',19]],
+  flo:[['Fish Camp',44],['Freshman Leadership Org',26],['Impact',18],['T-Camp',11]],
+  corps:[['Squadron 17',34],['Company E-2',29],['Parsons Mounted Cavalry',21],['Aggie Band',12]]
+};
+
+const FAQ = [
+  ['How old do I have to be?',
+   'You must be at least 18 to participate on your own. Under 18, a parent or guardian signs the waiver and either runs with you or stays at the event while you race.'],
+  ['Do I have to do every obstacle?',
+   'No. Every obstacle is challenge by choice, if you would rather not face one, you can go around it. The swim station has a route around it too. Course officials are stationed at every obstacle, and telling one that you feel unsafe is always the right call.'],
+  ['When do I get my shirt?',
+   'Shirts are handed out at the event on race day. There is no early pickup. Bibs are assigned when you check in, not before.'],
+  ['Where do I park, and when should I arrive?',
+   'Parking is free. Check-in opens at 7:00am and everyone is asked to arrive then, whatever heat you are in.'],
+  ['What should I bring?',
+   'A photo ID and your wallet for food after the race, plus a change of clothes, a second pair of shoes and a towel. You are going to be genuinely muddy.'],
+  ['What do I do with my keys and phone?',
+   'There is a gear check with a key wall at the check-in tables. Anything you would rather not leave there is safest in your vehicle.'],
+  ['How do heats work?',
+   'Heats start every 10 minutes. You pick your time when you register, and a heat disappears once it fills. If your friends registered first, open their group link and it will put you in the same heat in one tap.']
+];
+
+/* ============================ site views ============================ */
+
+const NAVLINKS = [['course','Course'],['giveback','Giveback'],['leaderboard','Standings'],
+                  ['sponsors','Sponsors'],['about','About'],['faq','FAQ']];
+
+function nav(){
+  return `<nav class="nav"><div class="nav-in">
+    <button class="brand" data-go="home" aria-label="Gladiator Dash home">
+      ${HELMET('26px')}${WORDS('15px')}
+    </button>
+    <div class="links">
+      ${NAVLINKS.map(([v,l])=>`<button class="navlink ${S.view===v?'on':''}" data-go="${v}">${l}</button>`).join('')}
+    </div>
+    <button class="navcta" data-go="ticket">Register</button>
+  </div></nav>`;
+}
+
+function footer(){
+  return `<footer class="foot"><div class="foot-in">
+    <div class="fl">
+      <div>
+        <h4>The race</h4>
+        <ul>
+          <li><button class="flink" data-go="ticket">Register</button></li>
+          <li><button class="flink" data-go="course">Course</button></li>
+          <li><button class="flink" data-go="faq">FAQ</button></li>
+          <li><button class="flink" data-go="raffle">Raffle</button></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Organizations</h4>
+        <ul>
+          <li><button class="flink" data-go="giveback">Giveback Program</button></li>
+          <li><button class="flink" data-go="leaderboard">Standings</button></li>
+          <li><button class="flink" data-go="sponsors">Sponsors</button></li>
+        </ul>
+      </div>
+      <div>
+        <h4><span class="bn">One Army</span></h4>
+        <ul>
+          <li><button class="flink" data-go="about">About</button></li>
+          <li><a href="mailto:onearmy.philanthropy@gmail.com">onearmy.philanthropy@gmail.com</a></li>
+          <li><a href="https://www.instagram.com/gladiatordash" target="_blank" rel="noopener">@gladiatordash</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="fbottom">
+      <span class="bn">Gladiator Dash</span> is the philanthropy event of <b><span class="bn">One Army</span></b>, a men's service and leadership
+      organization at Texas A&amp;M. 100% of proceeds benefit <a class="ext" href="https://www.stillcreekranch.org" target="_blank" rel="noopener">Still Creek Ranch<svg class="extico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>.<br>
+      Prototype build, placeholder heat times, capacities and standings. Prices, dates, sponsors,
+      the cause and the Giveback rules are real.
+    </p>
+  </div></footer>`;
+}
+
+const shell = inner => `${nav()}${inner}${footer()}`;
+
+function viewHome(){
+  const n = racing().length + noHeat().length;
+  return shell(`
+  <section class="hero"><div class="hero-in">
+    <div class="kicker"><span class="dot"></span>Benefiting Still Creek Ranch</div>
+    <h1 class="d" style="margin:18px 0 0">${WORDSFILL}</h1>
+    <div class="when num">Sunday, April 11, 2027, <span>Lake Bryan</span></div>
+    <p class="sub">A 5K through the mud with obstacles you can take on or walk around.
+      Bring four friends and pick the same heat.</p>
+    <div class="acts">
+      <button class="join" data-go="ticket">Register ${ICON.arrow}</button>
+      <button class="join secondary" data-go="course">What the race is</button>
+    </div>
+  </div></section>
+
+  <section class="band"><div class="band-in">
+    <div class="statline">
+      <div class="stat"><div class="v num">100%</div><div class="k">of proceeds to Still Creek Ranch</div></div>
+      <div class="stat"><div class="v num">$1.25M+</div><div class="k">raised since <span class="bn">One Army</span> began</div></div>
+      <div class="stat"><div class="v num">$25</div><div class="k">student entry, non-competitive</div></div>
+    </div>
+    <div class="cols two" style="margin-top:44px">
+      <div>
+        <h2 class="d h2" style="margin-top:0">The race</h2>
+        <p class="body-copy">3.1 miles at Lake Bryan, obstacles throughout and one swim station.
+          Every obstacle is <b>challenge by choice</b>, if you would rather not face one, go around it.
+          The swim has a way around it too.</p>
+        <p class="body-copy muted">Competitive runners race the clock. Non-competitive runners take
+          the same course at their own pace. Endurance runs laps from 7:45 a.m. until 1:00 p.m.
+          Arena is event-area access with no course at all.</p>
+        <p class="body-copy"><b>Every entry includes a race shirt</b>, handed out at the event on
+          the day. There is live music and food afterwards.</p>
+        <button class="join secondary alt" style="max-width:280px" data-go="course">See the course</button>
+      </div>
+      <div>
+        <h2 class="d h2" style="margin-top:0">Bring your org</h2>
+        <p class="body-copy">Through the <b>Giveback Program</b>, the student organization with the
+          most participants in each of four categories wins <b>$1,000</b> toward its own philanthropy.</p>
+        <p class="body-copy muted">Every group gets a share link that shows who has signed up and
+          what time they are running, so nobody has to chase a group chat for it.</p>
+        <button class="join secondary alt" style="max-width:280px" data-go="giveback">How Giveback works</button>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="band"><div class="band-in">
+    <h2 class="d h2" style="margin-top:0">Where the money goes</h2>
+    <p class="body-copy"><a class="ext" href="https://www.stillcreekranch.org" target="_blank" rel="noopener">Still Creek Ranch<svg class="extico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a> has been rescuing children out of crisis since 1988,
+      abuse, neglect, abandonment, trafficking, and raising them in family-style homes.
+      <span class="bn">One Army</span> fundraises for the Ranch and volunteers there.</p>
+    <p class="body-copy">It is a home rather than a shelter. Children are placed in family-style
+      houses on the ranch, where they can recover and be raised, and it has been doing that for
+      close to forty years.</p>
+    <p class="body-copy"><b>100% of what you pay to run goes to them.</b> Sponsors cover the cost
+      of putting the race on, so entry money is not spent on the event it came from.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+      <a class="join secondary alt" style="max-width:300px;text-decoration:none"
+         href="https://www.stillcreekranch.org" target="_blank" rel="noopener">
+        Visit Still Creek Ranch ${ICON.ext}</a>
+      <button class="join secondary alt" style="max-width:240px" data-go="about">About <span class="bn">One Army</span></button>
+    </div>
+  </div></section>
+
+  <section class="band"><div class="band-in">
+    <h2 class="d h2" style="margin-top:0">Sponsors</h2>
+    <div class="tierrow" style="margin-top:18px">
+      ${SPONSORS.title.map(s=>sponsorChip(s,'title')).join('')}
+      ${SPONSORS.arena.map(s=>sponsorChip(s,'arena')).join('')}
+      ${SPONSORS.gold.slice(0,4).map(s=>sponsorChip(s)).join('')}
+    </div>
+    <button class="join secondary alt" style="max-width:280px" data-go="sponsors">All sponsors</button>
+  </div></section>`);
+}
+
+function viewAbout(){
+  return shell(`<div class="page narrow">
+    <h1 class="d ptitle">About</h1>
+    <p class="pintro"><b><span class="bn">One Army</span></b> is a men's service and leadership organization at Texas A&amp;M.
+      Its purpose is to develop its members as Aggies and leaders by serving the campus and the
+      community, and by promoting unity in Aggieland.</p>
+
+    <h2 class="d h2">Gladiator Dash</h2>
+    <p class="body-copy"><span class="bn">Gladiator Dash</span> is <span class="bn">One Army</span>'s main philanthropy event and
+      Bryan–College Station's original obstacle-integrated mud run. It is a 5K at Lake Bryan
+      with obstacles throughout and one swim station, run in heats every 10 minutes.</p>
+
+    <h2 class="d h2">Still Creek Ranch</h2>
+    <p class="body-copy"><a class="ext" href="https://www.stillcreekranch.org" target="_blank" rel="noopener">Still Creek Ranch<svg class="extico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a> has been operating since 1988. It takes in children
+      out of crisis situations, abuse, neglect, abandonment and trafficking, and raises them
+      in family-style homes where they can recover.</p>
+    <p class="body-copy"><span class="bn">One Army</span> does not simply write the Ranch a cheque. Members volunteer
+      there, and every dollar raised by this race goes to the Ranch.</p>
+
+    <div class="statline">
+      <div class="stat"><div class="v num">1988</div><div class="k">Still Creek Ranch founded</div></div>
+      <div class="stat"><div class="v num">$1.25M+</div><div class="k">raised by <span class="bn">One Army</span></div></div>
+      <div class="stat"><div class="v num">100%</div><div class="k">of proceeds to the Ranch</div></div>
+    </div>
+  </div>`);
+}
+
+function viewCourse(){
+  return shell(`<div class="page narrow">
+    <h1 class="d ptitle">The course</h1>
+    <p class="pintro">3.1 miles at Lake Bryan, obstacles throughout, and one swim station.
+      Expect to be genuinely muddy.</p>
+
+    <h2 class="d h2">Challenge by choice</h2>
+    <p class="body-copy">Every obstacle is optional. If you reach one and would rather not face it,
+      you can go around it completely and keep running. The swim station has a route around it
+      for anyone who would rather not swim.</p>
+    <p class="body-copy">Course officials are stationed at every obstacle. If you feel unsafe or
+      think you might be hurt, tell one, that is what they are there for.</p>
+
+    <h2 class="d h2">The obstacles</h2>
+    <p class="body-copy">The obstacles are the same every year. <b>The order is not published</b>,
+      what you meet and when is part of race day.</p>
+
+    <div class="notice">${ICON.lock}<div><b>Content needed.</b> The obstacle names and photographs
+      are not in this prototype. The live site lists them as images, so they could not be pulled
+      across automatically. Two other things need settling before this page can ship: the obstacle
+      <b>count</b> (the About page says 12, the RaceEntry listing says 15) and whether any obstacle
+      photos may be published.</div></div>
+
+    <h2 class="d h2">Formats</h2>
+    <dl>
+      <div class="qa"><dt>Competitive</dt><dd>Timed. You race the clock and everyone else in your heat.</dd></div>
+      <div class="qa"><dt>Non-competitive</dt><dd>The same course and the same obstacles, at your own pace, with no clock.</dd></div>
+      <div class="qa"><dt>Endurance</dt><dd>Starts at 7:45 a.m. and runs until 1:00 p.m. You run laps, a tally is kept beside your name, and the most laps wins. Water stations sit mid-course.</dd></div>
+      <div class="qa"><dt>Arena</dt><dd>Event-area access. No course, no heat, come for the crowd, the music and the food.</dd></div>
+    </dl>
+    <button class="join" style="max-width:320px" data-go="ticket">Register ${ICON.arrow}</button>
+  </div>`);
+}
+
+function viewGiveback(){
+  return shell(`<div class="page">
+    <h1 class="d ptitle">Giveback Program</h1>
+    <p class="pintro">Bring your organization to the race and it can leave with <b>$1,000</b>
+      toward its own philanthropy.</p>
+
+    <div class="page narrow" style="padding:0">
+      <p class="body-copy">Texas A&amp;M student organizations compete on one number:
+        <b>how many of your members run <span class="bn">Gladiator Dash</span></b>. The organization with the most
+        participants in each of the four categories below wins $1,000 toward its own philanthropy,
+        or toward an event it puts on that serves the community.</p>
+      <p class="body-copy muted">Service groups, social organizations, sororities, fraternities,
+        professional groups, religious groups and community service organizations are all eligible.</p>
+    </div>
+
+    <div class="statline">
+      <div class="stat"><div class="v num">4</div><div class="k">categories</div></div>
+      <div class="stat"><div class="v num">$1,000</div><div class="k">to each winner</div></div>
+      <div class="stat"><div class="v num">$4,000</div><div class="k">back to campus</div></div>
+    </div>
+
+    <h2 class="d h2">The categories</h2>
+    <div class="tierrow" style="margin-top:16px">
+      ${GIVEBACK_CATS.map(c=>`<span class="tiername">${esc(c.name)}</span>`).join('')}
+    </div>
+
+    <div class="page narrow" style="padding:0">
+      <h2 class="d h2">How to enter</h2>
+      <p class="body-copy">There is nothing to fill in. Pick your organization when you register,
+        and every member who does the same is counted toward it. Your organization's page shows
+        who has signed up and what time they are running, which is also the easiest way to get
+        the rest of your members off the fence.</p>
+      <div class="notice">${ICON.lock}<div><b>Confirm for 2027.</b> The Giveback Program ran in
+        2026. These rules are taken from that year and need confirming before they are published
+        again.</div></div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:26px">
+      <button class="join" style="max-width:280px" data-go="leaderboard">See the standings ${ICON.arrow}</button>
+      <button class="join secondary alt" style="max-width:240px;margin-top:22px" data-go="ticket">Register</button>
+    </div>
+  </div>`);
+}
+
+function viewLeaderboard(){
+  return shell(`<div class="page">
+    <h1 class="d ptitle">Standings</h1>
+    <p class="pintro">Registered runners by organization. The leader in each category takes
+      <b>$1,000</b> through the <button class="flink" style="color:var(--cyan);font-weight:600" data-go="giveback">Giveback Program</button>.</p>
+
+    ${GIVEBACK_CATS.map(c=>`
+      <h2 class="d h2">${esc(c.name)}</h2>
+      <table class="lb">
+        <thead><tr><th style="width:38px"></th><th>Organization</th><th class="r">Runners</th></tr></thead>
+        <tbody>
+          ${STANDINGS[c.id].map(([org,cnt],i)=>`
+            <tr class="${i===0?'lead':''}">
+              <td class="rank num">${i+1}</td>
+              <td class="org">${esc(org)}${i===0?` <span class="prize">, leading</span>`:''}</td>
+              <td class="r cnt num">${cnt}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>`).join('')}
+
+    <div class="notice">${ICON.lock}<div><b>Placeholder standings.</b> These names and counts are
+      invented to show the layout. Real standings come from registrations, and because money
+      depends on them they need to be accurate and disputable, not a decorative number.</div></div>
+  </div>`);
+}
+
+function viewSponsors(){
+  const tier = (label,list,cls='') => `
+    <div class="tierlabel">${label}</div>
+    <div class="tierrow">${list.map(s=>sponsorChip(s,cls)).join('')}</div>`;
+  return shell(`<div class="page">
+    <h1 class="d ptitle">Sponsors</h1>
+    <p class="pintro"><span class="bn">Gladiator Dash</span> runs on local businesses and families who put their name
+      behind it. 100% of what runners pay goes to <a class="ext" href="https://www.stillcreekranch.org" target="_blank" rel="noopener">Still Creek Ranch<svg class="extico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>, sponsors are what cover
+      the race itself.</p>
+    ${tier('Title sponsor', SPONSORS.title, 'title')}
+    ${tier('Arena sponsor', SPONSORS.arena, 'arena')}
+    ${tier('Gold', SPONSORS.gold)}
+    ${tier('Silver', SPONSORS.silver)}
+    ${tier('Bronze', SPONSORS.bronze)}
+
+    <div class="notice">${ICON.lock}<div><b>Logos needed.</b> These are the real sponsors and
+      tiers, but only the names were available. Sponsors expect their logo, not a text list,
+      collect the artwork before this page goes live.</div></div>
+
+    <h2 class="d h2">Sponsor the 2027 race</h2>
+    <p class="body-copy">Email <a href="mailto:onearmy.philanthropy@gmail.com" style="color:var(--cyan)">onearmy.philanthropy@gmail.com</a>.</p>
+  </div>`);
+}
+
+function viewRaffle(){
+  return shell(`<div class="page narrow">
+    <h1 class="d ptitle">Raffle</h1>
+    <p class="pintro">A separate draw alongside the race, benefiting Still Creek Ranch.
+      You do not have to run to enter.</p>
+    <p class="body-copy">Tickets are sold online and the draw happens on race day.
+      Past years have put up a luxury watch, golf equipment, restaurant gift cards,
+      baskets from local farms and entertainment packages.</p>
+    <div class="notice">${ICON.lock}<div><b>2027 prizes and ticket price not set.</b> The prize
+      list above describes previous years and must not be published as this year's. Confirm the
+      2027 prizes, the ticket price and the draw time before this page ships.</div></div>
+    <h2 class="d h2">Endurance race</h2>
+    <p class="body-copy">Not the same thing as the raffle, though the current site groups them.
+      Endurance starts at 7:45 a.m. and runs until 1:00 p.m., laps of the course, a tally beside
+      your name, most laps wins.</p>
+    <button class="join" style="max-width:320px" data-go="ticket">Register ${ICON.arrow}</button>
+  </div>`);
+}
+
+function viewFaq(){
+  return shell(`<div class="page narrow">
+    <h1 class="d ptitle">FAQ</h1>
+    <p class="pintro">Everything people ask before race day. Anything missing goes to
+      <a href="mailto:onearmy.philanthropy@gmail.com" style="color:var(--cyan)">onearmy.philanthropy@gmail.com</a>.</p>
+    <dl style="margin-top:26px">
+      ${FAQ.map(([q,a])=>`<div class="qa"><dt>${esc(q)}</dt><dd>${esc(a)}</dd></div>`).join('')}
+    </dl>
+    <button class="join" style="max-width:320px" data-go="ticket">Register ${ICON.arrow}</button>
+  </div>`);
+}
+
+/* ============================ render ============================ */
+const VIEWS = {
+  home:viewHome, group:viewGroup, ticket:viewTicket, heat:viewHeat, runners:viewRunners,
+  review:viewReview, handoff:viewHandoff, confirm:viewConfirm, preview:viewPreview,
+  about:viewAbout, course:viewCourse, giveback:viewGiveback, leaderboard:viewLeaderboard,
+  sponsors:viewSponsors, raffle:viewRaffle, faq:viewFaq
+};
+
+/* the persistent hero clip only belongs on the two views that use it as ground */
+const HERO_VIEWS = {home:'tall', group:''};
+
+let lastView = null;
+
+/* Scroll to the top only when the SCREEN changes. Expanding the roster, ticking
+   the waiver, or adding a runner re-renders the same screen in place, and yanking
+   the page to the top there loses the reader's spot for no reason. */
+function render(forceTop){
+  document.getElementById('app').innerHTML = VIEWS[S.view]();
+  if((forceTop || S.view !== lastView) && S.view !== 'handoff') window.scrollTo(0,0);
+  lastView = S.view;
+  const hv = document.getElementById('herovid');
+  const mode = HERO_VIEWS[S.view];
+  hv.classList.toggle('on', mode !== undefined);
+  hv.classList.toggle('tall', mode === 'tall');
+  try{ history.replaceState(null,'',`#${S.scen}/${S.view}`); }catch(e){}
+  renderDemo();
+}
+
+/* Runs once. Autoplay only reliably engages when muted is set as a property and
+   play() is called from script; the markup attributes alone are not enough in
+   every engine. Calling this per render would restart the clip on every click. */
+function startHeroVideo(){
+  const v = document.getElementById('herovideo');
+  if(!v) return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ v.remove(); return; }
+  v.muted = true;
+  v.defaultMuted = true;
+  v.playsInline = true;
+  v.addEventListener('loadeddata', ()=>v.play().catch(()=>{}), {once:true});
+  v.addEventListener('error', ()=>document.getElementById('herovid').classList.add('failed'), {once:true});
+  v.src = ASSET_VIDEO;
+}
+
+function readHash(){
+  const [sc,v] = (location.hash||'').replace(/^#/,'').split('/');
+  if(SCENARIOS[sc]) S.scen = sc;
+  if(VIEWS[v] && v!=='handoff') S.view = v;
+  if(['ticket','heat','runners','review','confirm','preview'].includes(S.view)){
+    if(!S.ticket) S.ticket='comp';
+    if(!S.heat && ticketOf(S.ticket).heat) S.heat=suggestedHeat();
+    if(S.view==='review'||S.view==='confirm'){
+      if(!S.runners[0].first){ S.runners=[{first:'Jacob',last:'Pabian'},{first:'Ryan',last:'Mata'}]; }
+      S.waiver=true;
+    }
+  }
+}
+
+function renderDemo(){
+  document.getElementById('scenarios').innerHTML =
+    Object.entries(SCENARIOS).map(([k,v])=>
+      `<button class="chip ${S.scen===k?'on':''}" data-scen="${k}">${v.label}</button>`).join('');
+  document.getElementById('jumps').innerHTML =
+    [['home','Home'],['group','Group page'],['ticket','Tickets'],['heat','Heats'],['runners','Runners'],
+     ['review','Review'],['confirm','Confirmed'],['preview','Link preview'],
+     ['course','Course'],['giveback','Giveback'],['leaderboard','Standings'],
+     ['sponsors','Sponsors'],['about','About'],['raffle','Raffle'],['faq','FAQ']]
+    .map(([k,l])=>`<button class="chip ${S.view===k?'on':''}" data-jump="${k}">${l}</button>`).join('');
+}
+
+/* ============================ events ============================ */
+/* A real visit stack, not a static map of "what usually precedes what". The flow
+   skips steps depending on where you entered and which ticket you picked, so the
+   only honest answer to "back" is the screen you actually came from. */
+function go(v){ if(v!==S.view){ S.hist.push(S.view); S.view=v; } }
+function back(){ S.view = S.hist.pop() || 'group'; }
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('[data-join],[data-go],[data-ticket],[data-student],[data-heat],[data-next],[data-add],[data-del],[data-waiver],[data-back],[data-toggle],[data-share],[data-scen],[data-jump]');
+  if(!t){
+    if(!e.target.closest('#demo,#demobtn')) document.getElementById('demo').classList.remove('open');
+    return;
+  }
+  const g=k=>t.getAttribute(k);
+  let forceTop=false;
+
+  if(g('data-join')){ S.heat=g('data-join'); go('ticket'); }
+  else if(g('data-go')){
+    const v=g('data-go');
+    if(g('data-arena')){ S.ticket='arena'; S.heat=null; }
+    if(v==='heat'){ S.heat=null; go('ticket'); }
+    /* home and the group page are top-level destinations, so arriving at either
+       clears the trail rather than leaving a half-finished registration behind
+       the back button */
+    else if(v==='group'||v==='home'){ S.hist=[]; S.view=v; forceTop=true; }
+    else go(v);
+  }
+  else if(g('data-ticket')){
+    S.ticket=g('data-ticket');
+    if(!ticketOf(S.ticket).heat) S.heat=null;
+  }
+  else if(g('data-student')) S.student=!S.student;
+  else if(g('data-heat')) S.heat=g('data-heat');
+  else if(g('data-next')){
+    const s=g('data-next');
+    if(s==='ticket') go(ticketOf(S.ticket).heat && !S.heat ? 'heat' : 'runners');
+    else if(s==='heat') go('runners');
+    else if(s==='runners') go('review');
+    else if(s==='review') go('handoff');
+  }
+  else if(g('data-add')) S.runners.push({first:'',last:''});
+  else if(g('data-del')) S.runners.splice(+g('data-del'),1);
+  else if(g('data-waiver')) S.waiver=!S.waiver;
+  else if(g('data-back')) back();
+  else if(g('data-toggle')) S.rosterOpen=!S.rosterOpen;
+  else if(g('data-share')){
+    const url=`https://gladiatordash.com/g/${D().group.slug}?r=a7f2`;
+    const text=`Running Gladiator Dash${S.heat?` at ${S.heat}`:''}. Join my group:`;
+    if(navigator.share) navigator.share({title:'Gladiator Dash',text,url}).catch(()=>{});
+    else { navigator.clipboard?.writeText(`${text} ${url}`); t.innerHTML = ICON.check+' Link copied'; return; }
+    return;
+  }
+  else if(g('data-scen')){ S.scen=g('data-scen'); S.heat=null; S.rosterOpen=false; S.hist=[]; S.view='group'; forceTop=true; }
+  else if(g('data-jump')){
+    S.hist=[]; S.view=g('data-jump');
+    if(!S.ticket) S.ticket='comp';
+    if(!S.heat && ticketOf(S.ticket).heat) S.heat=suggestedHeat();
+    forceTop=true;
+  }
+  render(forceTop);
+});
+
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Enter' && e.key!==' ') return;
+  const t=e.target.closest('[role="radio"],[role="switch"],[role="checkbox"]');
+  if(t){ e.preventDefault(); t.click(); }
+});
+
+document.addEventListener('input', e=>{
+  const f=e.target.closest('[data-f]');
+  if(!f) return;
+  S.runners[+f.getAttribute('data-i')][f.getAttribute('data-f')] = f.value;
+  const t=document.querySelector('.flowbar .total');
+  if(t) t.textContent = total()?'$'+total():',';
+});
+
+document.getElementById('demobtn').addEventListener('click', ()=>{
+  document.getElementById('demo').classList.toggle('open');
+});
+
+readHash();
+render();
+startHeroVideo();
+</script>
+</body>
+</html>
