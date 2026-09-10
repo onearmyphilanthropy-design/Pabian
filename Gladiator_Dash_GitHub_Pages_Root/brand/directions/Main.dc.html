@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=Teko:wght@600&family=Work+Sans:wght@400;600&display=swap">
+  <style>
+    :root{
+      --ink:#141414;
+      --paper:#F7F4EE;
+      --line:#E4DFD4;
+    }
+    body{margin:0;}
+    a{color:#141414;} a:hover{color:#000;}
+  </style>
+</helmet>
+<div style="width:980px; min-height:560px; background:var(--paper); font-family:'Work Sans', sans-serif; padding:56px 60px; box-sizing:border-box; color:var(--ink);">
+  <div style="font-family:'Work Sans',sans-serif; font-size:13px; letter-spacing:0.14em; text-transform:uppercase; color:#8a8374; margin-bottom:10px;">Gladiator Dash — Visual Direction Exploration</div>
+  <h1 style="font-family:'Archivo Black', sans-serif; font-size:40px; line-height:1.05; margin:0 0 18px;">Three directions, not one answer.</h1>
+  <p style="font-family:'Work Sans',sans-serif; font-size:16px; line-height:1.6; color:#4a4436; max-width:640px; margin:0 0 40px;">
+    Each row below shows the same three real screens — homepage hero, ticket selection, and a group-invite share page — rebuilt in a genuinely different visual language. Nothing here is final; it's a reference set to react to.
+  </p>
+
+  <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px;">
+    <div style="border:1px solid var(--line); border-radius:2px; padding:22px; background:#12131c;">
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <div style="width:20px; height:20px; border-radius:50%; background:#1AA6D8;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#E3452F;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#0E1420;"></div>
+      </div>
+      <div style="font-family:'Bebas Neue', sans-serif; font-size:26px; letter-spacing:0.03em; color:#fff; margin-bottom:6px;">FIELD OPS</div>
+      <div style="font-family:'Work Sans',sans-serif; font-size:13.5px; line-height:1.55; color:#b8bcc6;">
+        Evolves the org's existing navy/cyan/red Instagram identity for the web. Bold countdown-numeral type, gritty sports-marketing energy — closest to "more of the same, done well."
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:2px; padding:22px; background:#FBF7EC;">
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <div style="width:20px; height:20px; border-radius:50%; background:#C7EA46;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#F0479A;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#141414;"></div>
+      </div>
+      <div style="font-family:'Archivo Black', sans-serif; font-size:22px; color:#141414; margin-bottom:6px;">MUD FEST</div>
+      <div style="font-family:'Work Sans',sans-serif; font-size:13.5px; line-height:1.55; color:#5c5647;">
+        Raw, photocopied-flyer collage energy — stamps, tape, marker scribbles, halftone dots. Built to look native in a college group chat, not on a corporate site.
+      </div>
+    </div>
+    <div style="border:1px solid var(--line); border-radius:2px; padding:22px; background:#5C1A25;">
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <div style="width:20px; height:20px; border-radius:50%; background:#7A2233;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#ffffff;"></div>
+        <div style="width:20px; height:20px; border-radius:50%; background:#141414;"></div>
+      </div>
+      <div style="font-family:'Teko', sans-serif; font-weight:600; font-size:28px; letter-spacing:0.02em; color:#fff; margin-bottom:2px;">AGGIE VARSITY</div>
+      <div style="font-family:'Work Sans',sans-serif; font-size:13.5px; line-height:1.55; color:#EBD9D9;">
+        Clean maroon-and-white athletics branding — jersey numerals, crest badge, varsity-program polish. Leans on campus pride rather than mud-run grit.
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:36px; font-family:'Work Sans',sans-serif; font-size:13px; color:#8a8374;">
+    Rows below, left to right: Hero → Ticket Selection → Group Invite.
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
